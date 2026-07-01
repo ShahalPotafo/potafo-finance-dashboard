@@ -1,0 +1,2216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fund Flow — Potafo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg:          #0a0d12;
+    --bg2:         #0f1318;
+    --surface:     #141920;
+    --surface2:    #1a2130;
+    --border:      #1e2835;
+    --border2:     #253040;
+    --ink:         #e8edf5;
+    --ink2:        #8899b0;
+    --ink3:        #4a5a70;
+    --accent:      #3b82f6;
+    --accent-dim:  #1e3a5f;
+    --accent-glow: rgba(59,130,246,.18);
+    --green:       #22c55e;
+    --green-dim:   #14532d;
+    --green-glow:  rgba(34,197,94,.15);
+    --red:         #ef4444;
+    --red-dim:     #4c1d1d;
+    --red-glow:    rgba(239,68,68,.15);
+    --amber:       #f59e0b;
+    --amber-dim:   #451a03;
+    --mono:        'JetBrains Mono', monospace;
+    --sans:        'Inter', -apple-system, sans-serif;
+    --r:           10px;
+    --r-sm:        6px;
+    --r-lg:        14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── APP SHELL ── */
+  .app-shell { display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 236px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 400;
+  }
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+  .brand-icon {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 0 16px var(--accent-glow);
+    flex-shrink: 0;
+  }
+  .brand-name { color: var(--ink); }
+  .brand-name span { color: var(--accent); }
+
+  .sidebar-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink3);
+    padding: 18px 20px 8px;
+  }
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 12px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 20px;
+    margin: 1px 10px;
+    border-radius: var(--r-sm);
+    color: var(--ink2);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    user-select: none;
+  }
+  .nav-item .nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+  .nav-item:hover { background: var(--surface2); color: var(--ink); }
+  .nav-item.active {
+    background: var(--accent-dim);
+    color: #93c5fd;
+    box-shadow: inset 0 0 0 1px rgba(59,130,246,.25);
+  }
+  .nav-item.disabled { opacity: .4; cursor: default; }
+  .nav-item.disabled:hover { background: none; color: var(--ink2); }
+  .nav-soon {
+    margin-left: auto;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--ink3);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 2px 6px;
+    border-radius: 20px;
+  }
+  .sidebar-foot {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--ink3);
+    flex-shrink: 0;
+  }
+
+  .app-content { flex: 1; min-width: 0; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: rgba(10,13,18,.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    gap: 12px;
+  }
+  .topbar-brand {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.3px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .topbar-brand .crumb-dim { color: var(--ink3); font-weight: 500; }
+
+  /* ── PLACEHOLDER PAGE ── */
+  .coming-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: calc(100vh - 60px);
+    padding: 40px;
+    color: var(--ink2);
+  }
+  .coming-soon .cs-icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    margin-bottom: 18px;
+  }
+  .coming-soon h2 { color: var(--ink); font-size: 18px; margin-bottom: 6px; }
+  .coming-soon p { font-size: 13px; max-width: 320px; }
+
+  .btn-menu { display: none; }
+  @media (max-width: 860px) {
+    .sidebar { position: fixed; left: -236px; transition: left .2s; }
+    .sidebar.open { left: 0; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 390; }
+    .sidebar-backdrop.open { display: block; }
+    .btn-menu { display: inline-flex !important; }
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all .18s;
+    white-space: nowrap;
+    font-family: var(--sans);
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .btn-primary:hover { background: #2563eb; box-shadow: 0 0 28px rgba(59,130,246,.35); }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--ink2);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { background: var(--border); color: var(--ink); }
+
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,.25);
+  }
+  .btn-danger:hover { background: rgba(239,68,68,.2); }
+
+  .btn-export {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,.25);
+  }
+  .btn-export:hover { background: rgba(34,197,94,.2); }
+
+  .btn-sm { padding: 5px 11px; font-size: 12px; }
+
+  /* ── MAIN ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  /* ── ENTRY PANEL ── */
+  .entry-panel {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--r-lg);
+    margin-bottom: 24px;
+    overflow: hidden;
+    display: none;
+    box-shadow: 0 8px 40px rgba(0,0,0,.4);
+  }
+  .entry-panel.open { display: block; animation: slideDown .22s ease; }
+  @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+  .entry-panel-header {
+    background: linear-gradient(135deg, #1a2d4a 0%, #0f1d35 100%);
+    border-bottom: 1px solid var(--accent-dim);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .entry-panel-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #93c5fd;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .entry-panel-header h3::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .entry-body { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 640px) { .entry-body { grid-template-columns: 1fr; } }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-field.full { grid-column: 1 / -1; }
+
+  label.field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+  }
+
+  input[type="date"],
+  input[type="number"],
+  input[type="text"],
+  select {
+    padding: 9px 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    color: var(--ink);
+    width: 100%;
+    outline: none;
+    font-family: var(--sans);
+    transition: border .15s, box-shadow .15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234a5a70' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  input::placeholder { color: var(--ink3); }
+
+  .submit-btn {
+    background: var(--accent);
+    color: #fff;
+    padding: 11px;
+    border: none;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 6px;
+    font-family: var(--sans);
+    transition: all .18s;
+    box-shadow: 0 0 20px var(--accent-glow);
+    letter-spacing: .2px;
+  }
+  .submit-btn:hover { background: #2563eb; box-shadow: 0 0 28px rgba(59,130,246,.35); }
+
+  /* Audit log */
+  .audit-log-wrap { overflow: hidden; border-radius: var(--r-sm); border: 1px solid var(--border); }
+  .audit-log-scroll { max-height: 270px; overflow-y: auto; }
+  .audit-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .audit-table th {
+    background: var(--bg2);
+    padding: 9px 12px;
+    font-weight: 600;
+    color: var(--ink3);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    position: sticky;
+    top: 0;
+  }
+  .audit-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--ink2);
+  }
+  .audit-table tr:last-child td { border-bottom: none; }
+  .audit-table tr:hover td { background: var(--surface2); }
+  .flow-add { color: var(--green); font-weight: 600; font-family: var(--mono); font-size: 11px; }
+  .flow-less { color: var(--red); font-weight: 600; font-family: var(--mono); font-size: 11px; }
+  .del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink3);
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all .15s;
+  }
+  .del-btn:hover { background: var(--red-dim); color: var(--red); }
+
+  .edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink3);
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all .15s;
+    margin-right: 2px;
+  }
+  .edit-btn:hover { background: var(--accent-dim); color: #93c5fd; }
+  .badge-date {
+    font-size: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 2px 7px;
+    border-radius: 20px;
+    color: var(--ink3);
+    margin-right: 6px;
+    font-family: var(--mono);
+  }
+  .baseline-row td {
+    background: rgba(59,130,246,.06);
+    color: #93c5fd;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .audit-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 10px;
+  }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .filter-bar-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink3);
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--accent);
+  }
+  .filter-group { display: flex; align-items: center; gap: 8px; }
+  .filter-group label { font-size: 12px; color: var(--ink3); font-weight: 500; }
+  .filter-group input { width: 140px; }
+
+  /* ── TAB NAV ── */
+  .tab-nav {
+    display: flex;
+    gap: 3px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 4px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-nav::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--ink3);
+    transition: all .18s;
+    white-space: nowrap;
+    text-align: center;
+    font-family: var(--sans);
+    letter-spacing: .1px;
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .tab-btn:not(.active):hover { background: var(--surface2); color: var(--ink2); }
+
+  /* ── REPORT PANELS ── */
+  .report-panel { display: none; }
+  .report-panel.active { display: block; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-icon { font-size: 15px; }
+
+  /* ── LEDGER CARDS ── */
+  .ledger-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    margin-bottom: 16px;
+    transition: border-color .2s;
+  }
+  .ledger-card:hover { border-color: var(--border2); }
+  .ledger-card-title {
+    padding: 13px 18px 11px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink2);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .ledger-table { width: 100%; border-collapse: collapse; }
+  .ledger-table td {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .ledger-table tr:last-child td { border-bottom: none; }
+  .ledger-table .lbl { color: var(--ink2); }
+  .ledger-table .amt {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .ledger-table .closing td {
+    background: rgba(59,130,246,.06);
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .ledger-table .closing .amt { color: var(--accent); font-weight: 700; }
+  .ledger-table .total-row td {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .ledger-table .total-row .amt { color: #fff; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* Cash flow */
+  .cf-row td { font-size: 13px; color: var(--ink2); }
+  .cf-row.subtotal td { background: var(--surface2); font-weight: 700; color: var(--ink); }
+  .cf-row.closing-row td {
+    background: linear-gradient(135deg, #1a2d4a, #0f1d35);
+    color: #93c5fd;
+    font-weight: 800;
+    font-size: 14px;
+    font-family: var(--mono);
+  }
+  .cf-sign-add { color: var(--green); font-weight: 700; }
+  .cf-sign-less { color: var(--red); font-weight: 700; }
+
+  /* Summary / Net */
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .summary-grid { grid-template-columns: 1fr; } }
+
+  .sum-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .sum-card:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+  .sum-card-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 10px;
+  }
+  .sum-card-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--ink);
+    font-family: var(--mono);
+    letter-spacing: -1px;
+  }
+  .sum-card.highlight {
+    background: linear-gradient(135deg, #1a2d4a 0%, #0f1d35 100%);
+    border-color: var(--accent-dim);
+    box-shadow: 0 0 24px rgba(59,130,246,.1);
+  }
+  .sum-card.highlight .sum-card-label { color: #93c5fd; }
+  .sum-card.highlight .sum-card-value { color: #fff; }
+  .sum-card.red-card {
+    background: linear-gradient(135deg, #2a1010 0%, #1a0a0a 100%);
+    border-color: rgba(239,68,68,.2);
+  }
+  .sum-card.red-card .sum-card-label { color: var(--red); opacity: .8; }
+  .sum-card.red-card .sum-card-value { color: var(--red); }
+
+  .net-position-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+  }
+  .net-position-bar::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+  }
+  .net-label { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .net-formula { font-size: 12px; color: var(--ink3); margin-top: 4px; font-family: var(--mono); }
+  .net-value {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    font-family: var(--mono);
+  }
+  .net-value.positive { color: var(--green); text-shadow: 0 0 24px var(--green-glow); }
+  .net-value.negative { color: var(--red); text-shadow: 0 0 24px var(--red-glow); }
+
+  /* Statutory */
+  .stat-table { width: 100%; border-collapse: collapse; }
+  .stat-table th {
+    background: var(--bg2);
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+  .stat-table th:first-child { text-align: left; }
+  .stat-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    text-align: right;
+    font-family: var(--mono);
+    color: var(--ink2);
+  }
+  .stat-table td:first-child {
+    text-align: left;
+    color: var(--ink2);
+    font-family: var(--sans);
+  }
+  .stat-table tr:last-child td { border-bottom: none; }
+  .stat-table .stat-closing td {
+    background: rgba(59,130,246,.06);
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-table .stat-total {
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--surface2);
+  }
+
+  /* ── CF TOGGLE ── */
+  .cf-toggle {
+    display: flex;
+    gap: 3px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r-sm);
+    padding: 3px;
+  }
+  .cf-toggle-btn {
+    padding: 5px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--ink3);
+    transition: all .18s;
+    font-family: var(--sans);
+    white-space: nowrap;
+  }
+  .cf-toggle-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  .cf-toggle-btn:not(.active):hover { background: var(--surface2); color: var(--ink2); }
+
+  /* ── EMPTY / TOAST ── */
+  .empty-state {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--ink3);
+    font-size: 13px;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 4px 0 16px; }
+
+  /* ── VAULT ── */
+  .vault-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 900;
+    background: rgba(0,0,0,.65);
+    backdrop-filter: blur(6px);
+    align-items: flex-start;
+    justify-content: center;
+    padding: 60px 16px 40px;
+  }
+  .vault-overlay.open { display: flex; animation: fadeIn .18s ease; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  .vault-modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--r-lg);
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.6);
+    animation: slideDown .2s ease;
+    overflow: hidden;
+  }
+  .vault-header {
+    background: linear-gradient(135deg, #1a2d4a 0%, #0f1d35 100%);
+    border-bottom: 1px solid var(--accent-dim);
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .vault-header h2 {
+    font-size: 14px; font-weight: 700; color: #93c5fd;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .vault-header h2::before {
+    content: ''; display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent);
+  }
+  .vault-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  .vault-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px;
+  }
+  .vault-section-title {
+    font-size: 10.5px; font-weight: 700; color: var(--ink3);
+    text-transform: uppercase; letter-spacing: .7px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .vault-section-title .vsicon {
+    font-size: 13px; opacity: .7;
+  }
+
+  .vault-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .vault-row p { font-size: 12px; color: var(--ink2); flex: 1; min-width: 160px; }
+
+  /* File drop zone */
+  .vault-drop {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--r);
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    position: relative;
+  }
+  .vault-drop:hover, .vault-drop.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .vault-drop input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    border: none; background: none; padding: 0;
+  }
+  .vault-drop-icon { font-size: 22px; margin-bottom: 6px; }
+  .vault-drop-label { font-size: 12.5px; color: var(--ink2); }
+  .vault-drop-sub { font-size: 11px; color: var(--ink3); margin-top: 3px; }
+
+  /* Auto backup toggle row */
+  .vault-toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .vault-toggle-info { font-size: 12px; color: var(--ink2); }
+  .vault-toggle-info small { display: block; font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+  .toggle-switch {
+    width: 40px; height: 22px; border-radius: 11px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    cursor: pointer; position: relative; transition: background .2s, border-color .2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--accent); border-color: var(--accent); }
+  .toggle-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--ink3); transition: transform .2s, background .2s;
+  }
+  .toggle-switch.on::after { transform: translateX(18px); background: #fff; }
+
+  .vault-interval-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px;
+    font-size: 12px; color: var(--ink2);
+  }
+  .vault-interval-row select {
+    width: auto; padding: 5px 28px 5px 10px; font-size: 12px;
+  }
+
+  /* Snapshot list */
+  .vault-snap-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+  .vault-snap-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--r-sm); padding: 9px 12px;
+    font-size: 12px;
+  }
+  .vault-snap-item .snap-name { flex: 1; color: var(--ink2); font-family: var(--mono); font-size: 11.5px; }
+  .vault-snap-item .snap-size { color: var(--ink3); font-size: 11px; }
+  .vault-snap-empty { font-size: 12px; color: var(--ink3); text-align: center; padding: 18px 0; }
+
+  .vault-status {
+    font-size: 11.5px; padding: 7px 12px; border-radius: var(--r-sm); margin-top: 4px;
+    display: none;
+  }
+  .vault-status.ok { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,.2); display: block; }
+  .vault-status.err { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,.2); display: block; }
+
+  .btn-vault {
+    background: linear-gradient(135deg, #1e3a5f 0%, #162d4a 100%);
+    color: #93c5fd;
+    border: 1px solid rgba(147,197,253,.2);
+    box-shadow: 0 0 12px rgba(59,130,246,.1);
+  }
+  .btn-vault:hover { background: linear-gradient(135deg, #243f68 0%, #1a3355 100%); color: var(--ink); }
+
+  .vault-status-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 5px 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    font-size: 11.5px;
+    color: var(--ink2);
+    font-family: var(--mono);
+    max-width: 240px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: background .2s, border-color .2s;
+  }
+  .vault-status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ink3);
+    flex-shrink: 0;
+    transition: background .3s, box-shadow .3s;
+  }
+  #vaultStatusLabel {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* ── NET POSITION DAY TABLE ── */
+  .nf-day-wrap {
+    margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+  .nf-day-title {
+    background: var(--bg2);
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .nf-day-scroll { max-height: 340px; overflow-y: auto; }
+  .nf-day-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .nf-day-table th {
+    background: var(--surface);
+    padding: 8px 14px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+  }
+  .nf-day-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink2);
+    vertical-align: middle;
+  }
+  .nf-day-table tr:last-child td { border-bottom: none; }
+  .nf-day-table tr:hover td { background: var(--surface2); }
+  .nf-day-date { font-family: var(--mono); font-size: 11.5px; color: var(--ink3); }
+  .nf-day-net { text-align: right; font-family: var(--mono); font-weight: 600; }
+  .nf-day-net.pos { color: var(--green); }
+  .nf-day-net.neg { color: var(--red); }
+  .nf-day-diff { text-align: right; font-family: var(--mono); font-size: 12px; }
+  .nf-day-diff.up { color: var(--green); }
+  .nf-day-diff.dn { color: var(--red); }
+  .nf-day-diff.flat { color: var(--ink3); }
+  .nf-day-pct { text-align: right; font-size: 11px; font-family: var(--mono); }
+  .nf-day-pct.up { color: var(--green); }
+  .nf-day-pct.dn { color: var(--red); }
+  .nf-day-pct.flat { color: var(--ink3); }
+  .nf-day-empty { padding: 28px; text-align: center; color: var(--ink3); font-size: 12.5px; }
+
+  .nf-sum-cell {
+    padding: 14px 16px;
+    border-right: 1px solid var(--border);
+  }
+  .nf-sum-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 5px;
+  }
+  .nf-sum-val {
+    font-size: 16px;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--ink);
+  }
+
+  .nav-item { text-decoration: none; }
+  .sidebar-brand:hover { background: var(--surface2); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-brand" href="dashboard.html" style="text-decoration:none;">
+      <div class="brand-icon">⚡</div>
+      <span class="brand-name">Pota<span>fo</span></span>
+    </a>
+    <div class="sidebar-label">Modules</div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="fundflow.html">
+        <span class="nav-icon">💵</span> Fund Flow
+      </a>
+      <a class="nav-item" href="opstatement.html">
+        <span class="nav-icon">📊</span> Operational Statement <span class="nav-soon">Soon</span>
+      </a>
+      <a class="nav-item" href="gst.html">
+        <span class="nav-icon">🧾</span> GST Reporting <span class="nav-soon">Soon</span>
+      </a>
+      <a class="nav-item" href="settings.html">
+        <span class="nav-icon">⚙️</span> Settings <span class="nav-soon">Soon</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">Potafo · v1.0</div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+  <div class="app-content">
+
+    <div class="page active" id="page-fundflow">
+
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <button class="btn btn-ghost btn-menu" onclick="openSidebar()">☰</button>
+      <div class="topbar-brand">
+        Fund Flow
+      </div>
+      <button class="btn btn-ghost" id="toggleEntryBtn" onclick="toggleEntryPanel()">＋ Add Entry</button>
+      <div class="vault-status-pill" id="vaultStatusPill">
+        <div class="vault-status-dot" id="vaultStatusDot"></div>
+        <span id="vaultStatusLabel">No file</span>
+      </div>
+      <button class="btn btn-vault" onclick="openVault()">🔒 Vault</button>
+      <button class="btn btn-export" onclick="exportCSV()">↓ Export CSV</button>
+    </header>
+
+    <!-- MAIN -->
+    <div class="main">
+
+  <!-- ENTRY PANEL -->
+  <div class="entry-panel" id="entryPanel">
+    <div class="entry-panel-header">
+      <h3>New Entry</h3>
+      <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,.08);color:#93c5fd;border-color:rgba(147,197,253,.2);" onclick="toggleEntryPanel()">✕ Close</button>
+    </div>
+    <div class="entry-body">
+      <!-- FORM -->
+      <div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Date</label>
+            <input type="date" id="entryDate" required>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Entry Type</label>
+            <select id="entryType" onchange="toggleEntryType()">
+              <option value="daily">Daily Transaction</option>
+              <option value="opening">Set Opening Balance</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Ledger</label>
+            <select id="entryCategory" onchange="handleCategoryChange()"></select>
+          </div>
+          <div class="form-field" id="actionGroup">
+            <label class="field-label">Direction</label>
+            <select id="entryAction" onchange="handleActionChange()">
+              <option value="add">Addition / Receipt (+)</option>
+              <option value="less">Payment / Deduction (−)</option>
+            </select>
+          </div>
+          <div class="form-field full" id="routeSubGroup" style="display:none;">
+            <label class="field-label" id="routeSubLabel">Clearing Route</label>
+            <select id="transactionRoute"></select>
+          </div>
+          <div class="form-field full" id="customDescGroup" style="display:none;">
+            <label class="field-label">Description</label>
+            <input type="text" id="entryDescription" placeholder="e.g. Office Rent, Razorpay payout…">
+          </div>
+          <div class="form-field full">
+            <label class="field-label">Amount (₹)</label>
+            <input type="number" id="entryAmount" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+        </div>
+        <button class="submit-btn" onclick="addRecord()">Inject Record →</button>
+        <div style="margin-top: 14px; display:flex; justify-content:flex-end;">
+          <button class="btn btn-danger btn-sm" onclick="clearAllData()">⚠ Wipe All Data</button>
+        </div>
+      </div>
+      <!-- AUDIT LOG -->
+      <div>
+        <div class="audit-section-title">Audit Log</div>
+        <div class="audit-log-wrap">
+          <div class="audit-log-scroll">
+            <table class="audit-table">
+              <thead>
+                <tr><th>Date</th><th>Ledger</th><th>Type</th><th style="text-align:right;">Amount</th><th></th></tr>
+              </thead>
+              <tbody id="logTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-bar-label"><div class="filter-dot"></div> Date Range</div>
+    <div class="filter-group">
+      <label>From</label>
+      <input type="date" id="filterFromDate" onchange="updateUI()">
+    </div>
+    <div class="filter-group">
+      <label>To</label>
+      <input type="date" id="filterToDate" onchange="updateUI()">
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="clearDateFilter()">Clear</button>
+  </div>
+
+  <!-- TAB NAV -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('cashflow', this)">Cash Flow</button>
+    <button class="tab-btn" onclick="switchTab('receivables', this)">Receivables</button>
+    <button class="tab-btn" onclick="switchTab('payables', this)">Payables</button>
+    <button class="tab-btn" onclick="switchTab('statutory', this)">Statutory</button>
+    <button class="tab-btn" onclick="switchTab('netfund', this)">Net Position</button>
+  </div>
+
+  <!-- ── TAB: CASH FLOW ── -->
+  <div class="report-panel active" id="tab-cashflow">
+    <div class="section-title" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <span style="display:flex;align-items:center;gap:10px;"><span class="section-icon">💵</span> Cash Flow Statement</span>
+      <div class="cf-toggle">
+        <button class="cf-toggle-btn active" onclick="setCFView('both', this)">Both</button>
+        <button class="cf-toggle-btn" onclick="setCFView('cash', this)">Cash</button>
+        <button class="cf-toggle-btn" onclick="setCFView('bank', this)">Bank</button>
+      </div>
+    </div>
+    <div class="ledger-card">
+      <table class="ledger-table" id="cashFlowTable">
+        <tbody id="cashFlowTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── TAB: RECEIVABLES ── -->
+  <div class="report-panel" id="tab-receivables">
+    <div class="section-title"><span class="section-icon">📥</span> Receivables</div>
+    <div class="two-col">
+      <div class="ledger-card">
+        <div class="ledger-card-title">Razorpay Receivable</div>
+        <table class="ledger-table">
+          <tbody>
+            <tr><td class="lbl">Opening Balance</td><td id="view_rpOpen" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Add: Additions</td><td id="view_rpAdd" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Less: Receipts (Payouts)</td><td id="view_rpRec" class="amt">0.00</td></tr>
+            <tr class="closing"><td class="lbl">Closing Balance</td><td id="view_rpClosing" class="amt">0.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ledger-card">
+        <div class="ledger-card-title">DE Credit Receivable</div>
+        <table class="ledger-table">
+          <tbody>
+            <tr><td class="lbl">Opening Balance</td><td id="view_deRecOpen" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Add: Additions</td><td id="view_deRecAdd" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Less: Receipts</td><td id="view_deRecRec" class="amt">0.00</td></tr>
+            <tr class="closing"><td class="lbl">Closing Balance</td><td id="view_deRecClosing" class="amt">0.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ledger-card">
+      <table class="ledger-table">
+        <tbody>
+          <tr class="total-row"><td>Total Receivables Closing</td><td id="sumReceivables" class="amt">0.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── TAB: PAYABLES ── -->
+  <div class="report-panel" id="tab-payables">
+    <div class="section-title"><span class="section-icon">📤</span> Payables</div>
+    <div class="two-col">
+      <div class="ledger-card">
+        <div class="ledger-card-title">Vendor Payable</div>
+        <table class="ledger-table">
+          <tbody>
+            <tr><td class="lbl">Opening Balance</td><td id="view_vOpen" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Add: Additions</td><td id="view_vAdd" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Less: Payments</td><td id="view_vPay" class="amt">0.00</td></tr>
+            <tr class="closing"><td class="lbl">Closing Balance</td><td id="view_vClosing" class="amt">0.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ledger-card">
+        <div class="ledger-card-title">DE Payable</div>
+        <table class="ledger-table">
+          <tbody>
+            <tr><td class="lbl">Opening Balance</td><td id="view_dePayOpen" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Add: Additions</td><td id="view_dePayAdd" class="amt">0.00</td></tr>
+            <tr><td class="lbl">Less: Payments (Salaries)</td><td id="view_dePayPay" class="amt">0.00</td></tr>
+            <tr class="closing"><td class="lbl">Closing Balance</td><td id="view_dePayClosing" class="amt">0.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ledger-card">
+      <table class="ledger-table">
+        <tbody>
+          <tr class="total-row"><td>Total Payables Closing (excl. Statutory)</td><td id="sumTradePayables" class="amt">0.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── TAB: STATUTORY ── -->
+  <div class="report-panel" id="tab-statutory">
+    <div class="section-title"><span class="section-icon">🏛️</span> Statutory Payables</div>
+    <div class="ledger-card">
+      <table class="stat-table">
+        <thead>
+          <tr><th>Particulars</th><th>GST</th><th>TDS</th><th>TCS</th><th class="stat-total">Total</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Opening Balance</td>
+            <td id="view_gstOpen">0.00</td><td id="view_tdsOpen">0.00</td><td id="view_tcsOpen">0.00</td>
+            <td id="view_statOpenTotal" class="stat-total">0.00</td>
+          </tr>
+          <tr>
+            <td>Additions</td>
+            <td id="view_gstAdd">0.00</td><td id="view_tdsAdd">0.00</td><td id="view_tcsAdd">0.00</td>
+            <td id="view_statAddTotal" class="stat-total">0.00</td>
+          </tr>
+          <tr>
+            <td>Deductions (Paid)</td>
+            <td id="view_gstDed">0.00</td><td id="view_tdsDed">0.00</td><td id="view_tcsDed">0.00</td>
+            <td id="view_statDedTotal" class="stat-total">0.00</td>
+          </tr>
+          <tr class="stat-closing">
+            <td>Closing Balance</td>
+            <td id="view_gstClosing">0.00</td><td id="view_tdsClosing">0.00</td><td id="view_tcsClosing">0.00</td>
+            <td id="view_statClosingTotal" class="stat-total">0.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── TAB: NET FUND POSITION ── -->
+  <div class="report-panel" id="tab-netfund">
+    <div class="section-title"><span class="section-icon">📊</span> Net Fund Position</div>
+    <div class="summary-grid">
+      <div class="sum-card highlight">
+        <div class="sum-card-label">Cash &amp; Bank Closing</div>
+        <div class="sum-card-value" id="sumCashBank">0.00</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-card-label">Total Receivables</div>
+        <div class="sum-card-value" id="sumReceivables2">0.00</div>
+      </div>
+      <div class="sum-card red-card">
+        <div class="sum-card-label">Total Payables (incl. Stat.)</div>
+        <div class="sum-card-value" id="sumPayables">0.00</div>
+      </div>
+    </div>
+    <div class="net-position-bar">
+      <div>
+        <div class="net-label">Net Fund Position</div>
+        <div class="net-formula">= Cash &amp; Bank + Receivables − Payables</div>
+      </div>
+      <div class="net-value positive" id="netFundPosition">0.00</div>
+    </div>
+
+    <!-- Period Cash Flow Summary -->
+    <div class="nf-day-wrap" style="margin-top:20px;">
+      <div class="nf-day-title">Period Summary</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;border-bottom:1px solid var(--border);">
+        <div class="nf-sum-cell">
+          <div class="nf-sum-label">Opening Net</div>
+          <div class="nf-sum-val" id="nfOpenNet">0.00</div>
+        </div>
+        <div class="nf-sum-cell">
+          <div class="nf-sum-label">Total Inflow</div>
+          <div class="nf-sum-val" style="color:var(--green);" id="nfTotalIn">0.00</div>
+        </div>
+        <div class="nf-sum-cell">
+          <div class="nf-sum-label">Total Outflow</div>
+          <div class="nf-sum-val" style="color:var(--red);" id="nfTotalOut">0.00</div>
+        </div>
+        <div class="nf-sum-cell">
+          <div class="nf-sum-label">Net Movement</div>
+          <div class="nf-sum-val" id="nfNetMove">0.00</div>
+        </div>
+        <div class="nf-sum-cell" style="border-right:none;">
+          <div class="nf-sum-label">Closing Net</div>
+          <div class="nf-sum-val" id="nfCloseNet">0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day-by-day table -->
+    <div class="nf-day-wrap">
+      <div class="nf-day-title">Day-by-Day Movement</div>
+      <div class="nf-day-scroll">
+        <table class="nf-day-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th style="text-align:right;">Inflow</th>
+              <th style="text-align:right;">Outflow</th>
+              <th style="text-align:right;">Net Move</th>
+              <th style="text-align:right;">Closing Net</th>
+            </tr>
+          </thead>
+          <tbody id="nfDayBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+    
+    </div><!-- /page-fundflow -->
+
+  </div><!-- /app-content -->
+</div><!-- /app-shell -->
+
+<!-- ── EDIT RECORD MODAL ── -->
+<div class="vault-overlay" id="editOverlay" onclick="editOverlayClick(event)">
+  <div class="vault-modal" id="editModal" style="max-width:420px;">
+    <div class="vault-header">
+      <h2>Edit Record</h2>
+      <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,.08);color:#93c5fd;border-color:rgba(147,197,253,.2);" onclick="closeEditModal()">✕ Close</button>
+    </div>
+    <div class="vault-body" style="gap:12px;">
+      <input type="hidden" id="editRecordId">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="form-field">
+          <label class="field-label">Date</label>
+          <input type="date" id="editDate">
+        </div>
+        <div class="form-field">
+          <label class="field-label">Ledger</label>
+          <select id="editCategory"></select>
+        </div>
+        <div class="form-field">
+          <label class="field-label">Direction</label>
+          <select id="editAction">
+            <option value="add">Addition (+)</option>
+            <option value="less">Deduction (−)</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="field-label">Amount (₹)</label>
+          <input type="number" id="editAmount" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div class="form-field" style="grid-column:1/-1;" id="editDescGroup">
+          <label class="field-label">Description</label>
+          <input type="text" id="editDescription" placeholder="Description">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="submit-btn" style="margin-top:0;" onclick="saveEditRecord()">Save Changes</button>
+        <button class="btn btn-danger" style="flex-shrink:0;" onclick="deleteFromEdit()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VAULT MODAL ── -->
+<div class="vault-overlay" id="vaultOverlay" onclick="vaultOverlayClick(event)">
+  <div class="vault-modal" id="vaultModal">
+    <div class="vault-header">
+      <h2>Vault — Data Manager</h2>
+      <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,.08);color:#93c5fd;border-color:rgba(147,197,253,.2);" onclick="closeVault()">✕ Close</button>
+    </div>
+    <div class="vault-body">
+
+      <!-- BACKUP FILE -->
+      <div class="vault-section">
+        <div class="vault-section-title"><span class="vsicon">📁</span> Backup File</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:140px;">
+            <div style="font-size:11px;color:var(--ink3);margin-bottom:3px;">Active backup file</div>
+            <div style="font-size:13px;color:var(--ink);font-family:var(--mono);" id="vaultCurrentFile">None</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="vaultPickFile()">Select File…</button>
+          <button class="btn btn-danger btn-sm" onclick="vaultClearFile()">✕ Clear</button>
+        </div>
+        <p style="font-size:11.5px;color:var(--ink3);line-height:1.6;">
+          Once a file is selected, every data change auto-saves to it immediately. The file stays active until you clear it or pick a different one. Requires Chrome / Edge.
+        </p>
+        <div class="vault-status" id="vaultFileStatus"></div>
+      </div>
+
+      <!-- IMPORT / RESTORE -->
+      <div class="vault-section">
+        <div class="vault-section-title"><span class="vsicon">📂</span> Import Backup</div>
+        <div class="vault-drop" id="vaultDropZone">
+          <input type="file" id="vaultFileInput" accept=".json" onchange="vaultImportFile(this)">
+          <div class="vault-drop-icon">📁</div>
+          <div class="vault-drop-label">Click to select or drag &amp; drop a backup file</div>
+          <div class="vault-drop-sub">Accepts .json exported from Vault</div>
+        </div>
+        <div class="vault-status" id="vaultImportStatus"></div>
+      </div>
+
+      <!-- MANUAL DOWNLOAD -->
+      <div class="vault-section">
+        <div class="vault-section-title"><span class="vsicon">💾</span> Manual Download</div>
+        <div class="vault-row">
+          <p>Download a one-off snapshot of all current data as a JSON file.</p>
+          <button class="btn btn-export btn-sm" onclick="vaultExportNow()">↓ Download</button>
+        </div>
+      </div>
+
+      <!-- SNAPSHOTS -->
+      <div class="vault-section">
+        <div class="vault-section-title"><span class="vsicon">🗂</span> Local Snapshots</div>
+        <div class="vault-snap-list" id="vaultSnapList"></div>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="vaultSaveSnapshot()">+ Save Snapshot Now</button>
+          <button class="btn btn-danger btn-sm" onclick="vaultClearSnapshots()">⚠ Clear All</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<script>
+
+  let database = [];
+  let openingBalances = { cash: 0, bank: 0, rp: 0, deRec: 0, v: 0, dePay: 0, gst: 0, tds: 0, tcs: 0 };
+
+  const ledgers = {
+    bank: "Bank Balance", cash: "Cash Balance", rp: "Razorpay Receivable",
+    deRec: "DE Credit Receivable", v: "Vendor Payable", dePay: "DE Payable",
+    gst: "Statutory GST", tds: "Statutory TDS", tcs: "Statutory TCS"
+  };
+
+  function fmt(n) {
+    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function save() {
+    localStorage.setItem('fundFlow_database', JSON.stringify(database));
+    localStorage.setItem('fundFlow_openingBalances', JSON.stringify(openingBalances));
+    vaultAutoWrite();
+  }
+  function load() {
+    const d = localStorage.getItem('fundFlow_database');
+    const o = localStorage.getItem('fundFlow_openingBalances');
+    if (d) database = JSON.parse(d);
+    if (o) openingBalances = JSON.parse(o);
+  }
+  function clearAllData() {
+    if (!confirm('Permanently wipe all stored data?')) return;
+    localStorage.removeItem('fundFlow_database');
+    localStorage.removeItem('fundFlow_openingBalances');
+    database = [];
+    openingBalances = { cash: 0, bank: 0, rp: 0, deRec: 0, v: 0, dePay: 0, gst: 0, tds: 0, tcs: 0 };
+    updateUI();
+  }
+
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.textContent = fmt(val); }
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.report-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function toggleEntryPanel() {
+    const p = document.getElementById('entryPanel');
+    const isOpen = p.classList.toggle('open');
+    document.getElementById('toggleEntryBtn').textContent = isOpen ? '✕ Close' : '＋ Add Entry';
+    if (isOpen) p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function populateCategories() {
+    const s = document.getElementById('entryCategory');
+    s.innerHTML = '';
+    for (let k in ledgers) {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = ledgers[k];
+      s.appendChild(o);
+    }
+  }
+
+  function toggleEntryType() {
+    const type = document.getElementById('entryType').value;
+    document.getElementById('actionGroup').style.display = type === 'opening' ? 'none' : '';
+    handleCategoryChange();
+  }
+
+  function handleCategoryChange() {
+    const cat = document.getElementById('entryCategory').value;
+    const type = document.getElementById('entryType').value;
+    const action = document.getElementById('entryAction').value;
+    const descGroup = document.getElementById('customDescGroup');
+    const routeSub = document.getElementById('routeSubGroup');
+    const routeSel = document.getElementById('transactionRoute');
+    const routeLabel = document.getElementById('routeSubLabel');
+
+    const isCashBank = cat === 'cash' || cat === 'bank';
+
+    // Description field: show for cash/bank daily entries
+    descGroup.style.display = (type === 'daily' && isCashBank) ? '' : 'none';
+
+    if (type === 'daily') {
+      routeSub.style.display = '';
+      routeSel.innerHTML = '';
+
+      if (!isCashBank) {
+        // Non-cash/bank ledger: route through Cash, Bank, or Direct
+        if (routeLabel) routeLabel.textContent = 'Clearing Route';
+        routeSel.innerHTML = `
+          <option value="via_cash">Via Cash</option>
+          <option value="via_bank">Via Bank</option>
+          <option value="direct">Direct (No Cash / Bank Impact)</option>`;
+      } else {
+        // Cash or Bank ledger: original smart-route options
+        if (routeLabel) routeLabel.textContent = 'Clearing Route';
+        if (action === 'add') {
+          routeSel.innerHTML = `
+            <option value="general">General / Direct (No Offset)</option>
+            <option value="rp_payout">Razorpay Settlement Payout (Deducts RP)</option>
+            <option value="de_cash">DE Cash Collection (Deducts DE Credit)</option>`;
+        } else {
+          routeSel.innerHTML = `
+            <option value="general">General / Flat Payment (No Offset)</option>
+            <option value="vendor_pay">Vendor Payment (Deducts Vendor Payable)</option>
+            <option value="de_salary">DE Salary Payment (Deducts DE Payable)</option>
+            <option value="gst_pay">GST Payment (Deducts Statutory GST)</option>
+            <option value="tds_pay">TDS Payment (Deducts Statutory TDS)</option>
+            <option value="tcs_pay">TCS Payment (Deducts Statutory TCS)</option>`;
+        }
+      }
+    } else {
+      routeSub.style.display = 'none';
+    }
+  }
+
+  function handleActionChange() { handleCategoryChange(); }
+
+  function clearDateFilter() {
+    document.getElementById('filterFromDate').value = '';
+    document.getElementById('filterToDate').value = '';
+    updateUI();
+  }
+
+  function addRecord() {
+    const date = document.getElementById('entryDate').value;
+    const type = document.getElementById('entryType').value;
+    const cat = document.getElementById('entryCategory').value;
+    const amt = parseFloat(document.getElementById('entryAmount').value);
+    const action = document.getElementById('entryAction').value;
+    let desc = document.getElementById('entryDescription').value.trim();
+
+    if (!date || isNaN(amt) || amt <= 0) return;
+
+    if (type === 'opening') {
+      openingBalances[cat] = amt;
+    } else {
+      const gid = Date.now();
+      const route = document.getElementById('transactionRoute').value;
+      const isCashBank = cat === 'cash' || cat === 'bank';
+
+      // ── Non-cash/bank ledger ──
+      if (!isCashBank) {
+        const ledgerName = ledgers[cat];
+        if (route === 'direct') {
+          // Direct: only affect the ledger, no Cash/Bank impact
+          database.push({ id: gid, date, cat, amt, action, desc: desc || `${ledgerName} ${action === 'add' ? 'Addition' : 'Deduction'} (Direct)` });
+        } else {
+          const cashCat   = route === 'via_cash' ? 'cash' : 'bank';
+          const cashLabel = route === 'via_cash' ? 'Cash' : 'Bank';
+          if (action === 'add') {
+            // Ledger Addition -> Cash/Bank also increases (money received into cash/bank)
+            database.push({ id: gid,     date, cat,          amt, action: 'add',  desc: desc || `${ledgerName} Addition via ${cashLabel}` });
+            database.push({ id: gid + 1, date, cat: cashCat, amt, action: 'add',  desc: `Automated ${cashLabel} Inflow — ${ledgerName}` });
+          } else {
+            // Ledger Deduction -> Cash/Bank increases (cash/bank received back)
+            database.push({ id: gid,     date, cat,          amt, action: 'less', desc: desc || `${ledgerName} Settlement via ${cashLabel}` });
+            database.push({ id: gid + 1, date, cat: cashCat, amt, action: 'add',  desc: `Automated ${cashLabel} Inflow — ${ledgerName}` });
+          }
+        }
+      }
+      // ── Cash / Bank ledger with smart routes ──
+      else if (action === 'add') {
+        if (route === 'rp_payout') {
+          database.push({ id: gid, date, cat, amt, action: 'add', desc: desc || 'Razorpay Settlement Payout Transfer' });
+          database.push({ id: gid + 1, date, cat: 'rp', amt, action: 'less', desc: 'Automated Settlement Deduction' });
+        } else if (route === 'de_cash') {
+          database.push({ id: gid, date, cat, amt, action: 'add', desc: desc || 'DE Cash Clearing Collection' });
+          database.push({ id: gid + 1, date, cat: 'deRec', amt, action: 'less', desc: 'Automated DE Credit Clearing Deduction' });
+        } else {
+          database.push({ id: gid, date, cat, amt, action, desc: desc || 'General Receipt' });
+        }
+      } else {
+        if (route === 'vendor_pay') {
+          database.push({ id: gid, date, cat, amt, action: 'less', desc: desc || 'Vendor Disbursement Payment' });
+          database.push({ id: gid + 1, date, cat: 'v', amt, action: 'less', desc: 'Automated Vendor Payable Ledger Relief' });
+        } else if (route === 'de_salary') {
+          database.push({ id: gid, date, cat, amt, action: 'less', desc: desc || 'DE Team Salary Processing' });
+          database.push({ id: gid + 1, date, cat: 'dePay', amt, action: 'less', desc: 'Automated DE Payable Ledger Relief' });
+        } else if (route === 'gst_pay') {
+          database.push({ id: gid, date, cat, amt, action: 'less', desc: desc || 'Statutory GST Government Remittance' });
+          database.push({ id: gid + 1, date, cat: 'gst', amt, action: 'less', desc: 'Automated GST Clearing Payment' });
+        } else if (route === 'tds_pay') {
+          database.push({ id: gid, date, cat, amt, action: 'less', desc: desc || 'Statutory TDS Government Remittance' });
+          database.push({ id: gid + 1, date, cat: 'tds', amt, action: 'less', desc: 'Automated TDS Clearing Payment' });
+        } else if (route === 'tcs_pay') {
+          database.push({ id: gid, date, cat, amt, action: 'less', desc: desc || 'Statutory TCS Government Remittance' });
+          database.push({ id: gid + 1, date, cat: 'tcs', amt, action: 'less', desc: 'Automated TCS Clearing Payment' });
+        } else {
+          database.push({ id: gid, date, cat, amt, action, desc: desc || 'General Expense' });
+        }
+      }
+    }
+    document.getElementById('entryAmount').value = '';
+    document.getElementById('entryDescription').value = '';
+    database.sort((a, b) => new Date(a.date) - new Date(b.date));
+    save();
+    updateUI();
+  }
+
+  function openEditOB(key) {
+    const sel = document.getElementById('editCategory');
+    sel.innerHTML = '';
+    for (let k in ledgers) {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = ledgers[k];
+      sel.appendChild(o);
+    }
+    sel.value = key;
+    sel.disabled = true;
+    document.getElementById('editRecordId').value = '__ob__' + key;
+    document.getElementById('editDate').value = '';
+    document.getElementById('editDate').disabled = true;
+    document.getElementById('editAction').value = 'add';
+    document.getElementById('editAction').disabled = true;
+    document.getElementById('editAmount').value = openingBalances[key];
+    document.getElementById('editDescription').value = '';
+    document.getElementById('editDescGroup').style.display = 'none';
+    document.querySelector('#editModal .vault-header h2').textContent = 'Edit Opening Balance';
+    document.getElementById('editOverlay').classList.add('open');
+  }
+
+  function deleteOB(key) {
+    if (!confirm(`Reset opening balance for "${ledgers[key]}" to zero?`)) return;
+    openingBalances[key] = 0;
+    save(); updateUI();
+  }
+
+  function openEditModal(id) {
+    const rec = database.find(x => x.id === id);
+    if (!rec) return;
+    document.getElementById('editRecordId').value = id;
+    document.getElementById('editDate').value = rec.date;
+    document.getElementById('editDate').disabled = false;
+    document.getElementById('editAction').value = rec.action;
+    document.getElementById('editAction').disabled = false;
+    document.getElementById('editAmount').value = rec.amt;
+    document.getElementById('editDescription').value = rec.desc || '';
+    const sel = document.getElementById('editCategory');
+    sel.innerHTML = '';
+    sel.disabled = false;
+    for (let k in ledgers) {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = ledgers[k];
+      sel.appendChild(o);
+    }
+    sel.value = rec.cat;
+    document.getElementById('editDescGroup').style.display = (rec.cat === 'cash' || rec.cat === 'bank') ? '' : 'none';
+    sel.onchange = () => {
+      const v = sel.value;
+      document.getElementById('editDescGroup').style.display = (v === 'cash' || v === 'bank') ? '' : 'none';
+    };
+    document.querySelector('#editModal .vault-header h2').textContent = 'Edit Record';
+    document.getElementById('editOverlay').classList.add('open');
+  }
+
+  function closeEditModal() { document.getElementById('editOverlay').classList.remove('open'); }
+  function editOverlayClick(e) { if (e.target === document.getElementById('editOverlay')) closeEditModal(); }
+
+  function saveEditRecord() {
+    const rawId = document.getElementById('editRecordId').value;
+    const amt = parseFloat(document.getElementById('editAmount').value);
+    if (isNaN(amt) || amt < 0) return;
+    if (rawId.startsWith('__ob__')) {
+      const key = rawId.replace('__ob__', '');
+      openingBalances[key] = amt;
+      save(); updateUI(); closeEditModal();
+      return;
+    }
+    const id = parseInt(rawId);
+    const date = document.getElementById('editDate').value;
+    const cat  = document.getElementById('editCategory').value;
+    const action = document.getElementById('editAction').value;
+    const desc = document.getElementById('editDescription').value.trim();
+    if (!date || amt <= 0) return;
+    const idx = database.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    database[idx] = { ...database[idx], date, cat, action, amt, desc };
+    database.sort((a, b) => new Date(a.date) - new Date(b.date));
+    save(); updateUI();
+    closeEditModal();
+  }
+
+  function deleteFromEdit() {
+    const rawId = document.getElementById('editRecordId').value;
+    closeEditModal();
+    if (rawId.startsWith('__ob__')) {
+      const key = rawId.replace('__ob__', '');
+      deleteOB(key);
+    } else {
+      deleteRecord(parseInt(rawId));
+    }
+  }
+
+  function deleteRecord(id) {
+    if (!confirm('Delete this record?')) return;
+    const target = database.find(x => x.id === id);
+    const autoDescs = [
+      'Automated Settlement Deduction','Automated DE Credit Clearing Deduction',
+      'Automated Vendor Payable Ledger Relief','Automated DE Payable Ledger Relief',
+      'Automated GST Clearing Payment','Automated TDS Clearing Payment','Automated TCS Clearing Payment'
+    ];
+    if (target && autoDescs.includes(target.desc)) {
+      database = database.filter(x => x.id !== id && x.id !== (id - 1));
+    } else {
+      database = database.filter(x => x.id !== id && x.id !== (id + 1));
+    }
+    save();
+    updateUI();
+  }
+
+  // ── CASH FLOW VIEW STATE ──
+  let cfView = 'both'; // 'both' | 'cash' | 'bank'
+  function setCFView(v, btn) {
+    cfView = v;
+    document.querySelectorAll('.cf-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    updateUI();
+  }
+
+  function exportCSV() {
+    const rows = [['Date','Ledger','Direction','Amount','Description']];
+    database.forEach(r => rows.push([r.date, ledgers[r.cat], r.action === 'add' ? 'Add' : 'Less', r.amt.toFixed(2), r.desc || '']));
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'fund-flow-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+  }
+
+  function updateUI() {
+    const fromVal = document.getElementById('filterFromDate').value;
+    const toVal = document.getElementById('filterToDate').value;
+
+    let activeOB = { ...openingBalances };
+    let filtered = [];
+
+    database.forEach(item => {
+      if (fromVal && item.date < fromVal) {
+        if (item.action === 'add') activeOB[item.cat] += item.amt;
+        else activeOB[item.cat] -= item.amt;
+      } else if (toVal && item.date > toVal) {
+        // excluded
+      } else {
+        filtered.push(item);
+      }
+    });
+
+    // Audit log
+    const lb = document.getElementById('logTableBody');
+    lb.innerHTML = '';
+    for (let k in activeOB) {
+      if (activeOB[k] !== 0) {
+        lb.innerHTML += `<tr class="baseline-row">
+          <td>—</td><td>${ledgers[k]}</td>
+          <td style="color:#93c5fd;font-weight:600;font-family:var(--mono);font-size:11px;">Baseline</td>
+          <td style="text-align:right;font-family:var(--mono);">${fmt(activeOB[k])}</td>
+          <td style="white-space:nowrap;">
+            <button class="edit-btn" onclick="openEditOB('${k}')">✎</button>
+            <button class="del-btn" onclick="deleteOB('${k}')">✕</button>
+          </td></tr>`;
+      }
+    }
+    filtered.forEach(item => {
+      const isAdd = item.action === 'add';
+      lb.innerHTML += `<tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--ink3);">${item.date}</td>
+        <td style="color:var(--ink);">${ledgers[item.cat]}${(item.cat==='cash'||item.cat==='bank') && item.desc ? `<br><small style="color:var(--ink3);font-size:10px;">${item.desc}</small>` : ''}</td>
+        <td class="${isAdd ? 'flow-add' : 'flow-less'}">${isAdd ? '+ Add' : '− Less'}</td>
+        <td style="text-align:right;font-family:var(--mono);color:${isAdd ? 'var(--green)' : 'var(--red)'};">${fmt(item.amt)}</td>
+        <td style="white-space:nowrap;">
+          <button class="edit-btn" onclick="openEditModal(${item.id})">✎</button>
+          <button class="del-btn" onclick="deleteRecord(${item.id})">✕</button>
+        </td>
+      </tr>`;
+    });
+    if (!lb.children.length) lb.innerHTML = '<tr><td colspan="5" class="empty-state">No records yet</td></tr>';
+
+    // Aggregate
+    let tx = {};
+    for (let k in ledgers) tx[k] = { add: 0, less: 0 };
+    filtered.forEach(item => {
+      if (item.action === 'add') tx[item.cat].add += item.amt;
+      else tx[item.cat].less += item.amt;
+    });
+
+    // Cash Flow (toggle-aware)
+    const cfb = document.getElementById('cashFlowTableBody');
+    cfb.innerHTML = '';
+    const showCash = cfView === 'both' || cfView === 'cash';
+    const showBank = cfView === 'both' || cfView === 'bank';
+    const openCash = activeOB.cash;
+    const openBank = activeOB.bank;
+
+    if (cfView === 'both') {
+      cfb.innerHTML += `
+        <tr class="cf-row"><td class="lbl">Opening Cash Balance</td><td class="amt" style="font-family:var(--mono);">${fmt(openCash)}</td></tr>
+        <tr class="cf-row"><td class="lbl">Opening Bank Balance</td><td class="amt" style="font-family:var(--mono);">${fmt(openBank)}</td></tr>
+        <tr class="cf-row subtotal"><td>Total Opening Balance</td><td class="amt" style="font-family:var(--mono);">${fmt(openCash + openBank)}</td></tr>`;
+    } else if (cfView === 'cash') {
+      cfb.innerHTML += `<tr class="cf-row subtotal"><td>Opening Cash Balance</td><td class="amt" style="font-family:var(--mono);">${fmt(openCash)}</td></tr>`;
+    } else {
+      cfb.innerHTML += `<tr class="cf-row subtotal"><td>Opening Bank Balance</td><td class="amt" style="font-family:var(--mono);">${fmt(openBank)}</td></tr>`;
+    }
+
+    filtered.forEach(item => {
+      if ((item.cat === 'cash' && showCash) || (item.cat === 'bank' && showBank)) {
+        const isAdd = item.action === 'add';
+        cfb.innerHTML += `<tr class="cf-row">
+          <td><span class="badge-date">${item.date}</span>
+          <span class="${isAdd ? 'cf-sign-add' : 'cf-sign-less'}">${isAdd ? 'Add' : 'Less'}:</span>
+          ${item.desc}${cfView === 'both' ? ` <span style="color:var(--ink3);font-size:11px;">(${ledgers[item.cat]})</span>` : ''}</td>
+          <td class="amt" style="font-family:var(--mono);color:${isAdd ? 'var(--green)' : 'var(--red)'};">${isAdd ? '+' : '−'}${fmt(item.amt)}</td>
+        </tr>`;
+      }
+    });
+
+    const closingCash = openCash + tx.cash.add - tx.cash.less;
+    const closingBank = openBank + tx.bank.add - tx.bank.less;
+    const closingCashBank = closingCash + closingBank;
+
+    if (cfView === 'both') {
+      cfb.innerHTML += `<tr class="cf-row closing-row"><td>Closing Cash &amp; Bank Balance</td><td class="amt">${fmt(closingCashBank)}</td></tr>`;
+    } else if (cfView === 'cash') {
+      cfb.innerHTML += `<tr class="cf-row closing-row"><td>Closing Cash Balance</td><td class="amt">${fmt(closingCash)}</td></tr>`;
+    } else {
+      cfb.innerHTML += `<tr class="cf-row closing-row"><td>Closing Bank Balance</td><td class="amt">${fmt(closingBank)}</td></tr>`;
+    }
+
+    // Receivables
+    sv('view_rpOpen', activeOB.rp); sv('view_rpAdd', tx.rp.add); sv('view_rpRec', tx.rp.less);
+    const rpClose = activeOB.rp + tx.rp.add - tx.rp.less; sv('view_rpClosing', rpClose);
+
+    sv('view_deRecOpen', activeOB.deRec); sv('view_deRecAdd', tx.deRec.add); sv('view_deRecRec', tx.deRec.less);
+    const deRecClose = activeOB.deRec + tx.deRec.add - tx.deRec.less; sv('view_deRecClosing', deRecClose);
+
+    const totalRec = rpClose + deRecClose;
+    sv('sumReceivables', totalRec); sv('sumReceivables2', totalRec);
+
+    // Payables
+    sv('view_vOpen', activeOB.v); sv('view_vAdd', tx.v.add); sv('view_vPay', tx.v.less);
+    const vClose = activeOB.v + tx.v.add - tx.v.less; sv('view_vClosing', vClose);
+
+    sv('view_dePayOpen', activeOB.dePay); sv('view_dePayAdd', tx.dePay.add); sv('view_dePayPay', tx.dePay.less);
+    const dePayClose = activeOB.dePay + tx.dePay.add - tx.dePay.less; sv('view_dePayClosing', dePayClose);
+
+    sv('sumTradePayables', vClose + dePayClose);
+
+    // Statutory
+    sv('view_gstOpen', activeOB.gst); sv('view_gstAdd', tx.gst.add); sv('view_gstDed', tx.gst.less);
+    const gstClose = activeOB.gst + tx.gst.add - tx.gst.less; sv('view_gstClosing', gstClose);
+
+    sv('view_tdsOpen', activeOB.tds); sv('view_tdsAdd', tx.tds.add); sv('view_tdsDed', tx.tds.less);
+    const tdsClose = activeOB.tds + tx.tds.add - tx.tds.less; sv('view_tdsClosing', tdsClose);
+
+    sv('view_tcsOpen', activeOB.tcs); sv('view_tcsAdd', tx.tcs.add); sv('view_tcsDed', tx.tcs.less);
+    const tcsClose = activeOB.tcs + tx.tcs.add - tx.tcs.less; sv('view_tcsClosing', tcsClose);
+
+    const statOpen = activeOB.gst + activeOB.tds + activeOB.tcs; sv('view_statOpenTotal', statOpen);
+    const statAdd = tx.gst.add + tx.tds.add + tx.tcs.add; sv('view_statAddTotal', statAdd);
+    const statDed = tx.gst.less + tx.tds.less + tx.tcs.less; sv('view_statDedTotal', statDed);
+    const statClose = gstClose + tdsClose + tcsClose; sv('view_statClosingTotal', statClose);
+
+    // Net Position
+    const totalPay = vClose + dePayClose + statClose;
+    const netFund = closingCashBank + totalRec - totalPay;
+    sv('sumCashBank', closingCashBank);
+    sv('sumPayables', totalPay);
+    const nfEl = document.getElementById('netFundPosition');
+    nfEl.textContent = fmt(Math.abs(netFund));
+    nfEl.className = 'net-value ' + (netFund >= 0 ? 'positive' : 'negative');
+    if (netFund < 0) nfEl.textContent = '−' + nfEl.textContent;
+
+    renderNFDayTable(activeOB, filtered);
+  }
+
+  function renderNFDayTable(baseOB, filtered) {
+    const tbody = document.getElementById('nfDayBody');
+
+    // Opening net position (before any filtered transactions)
+    const openNet = (baseOB.cash + baseOB.bank)
+                  + (baseOB.rp + baseOB.deRec)
+                  - (baseOB.v + baseOB.dePay + baseOB.gst + baseOB.tds + baseOB.tcs);
+
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="nf-day-empty">No transactions in selected range</td></tr>`;
+      // still update summary
+      const sv2 = (id, val, cls) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = (val < 0 ? '−' : '') + fmt(Math.abs(val));
+        if (cls) el.className = 'nf-sum-val ' + cls;
+      };
+      sv2('nfOpenNet', openNet);
+      sv2('nfTotalIn', 0);
+      sv2('nfTotalOut', 0);
+      sv2('nfNetMove', 0);
+      sv2('nfCloseNet', openNet);
+      return;
+    }
+
+    const dates = [...new Set(filtered.map(r => r.date))].sort();
+    const bal = { ...baseOB };
+    let prevNet = openNet;
+    let totalIn = 0, totalOut = 0;
+    const rows = [];
+
+    dates.forEach(date => {
+      let dayIn = 0, dayOut = 0;
+      filtered.filter(r => r.date === date).forEach(r => {
+        // inflow = anything that increases cash/bank or receivables, or decreases payables
+        const isAsset = r.cat === 'cash' || r.cat === 'bank' || r.cat === 'rp' || r.cat === 'deRec';
+        const isLiab  = r.cat === 'v' || r.cat === 'dePay' || r.cat === 'gst' || r.cat === 'tds' || r.cat === 'tcs';
+        if ((isAsset && r.action === 'add') || (isLiab && r.action === 'less')) dayIn += r.amt;
+        else dayOut += r.amt;
+        if (r.action === 'add') bal[r.cat] += r.amt; else bal[r.cat] -= r.amt;
+      });
+      const closeNet = (bal.cash + bal.bank) + (bal.rp + bal.deRec)
+                     - (bal.v + bal.dePay + bal.gst + bal.tds + bal.tcs);
+      const move = closeNet - prevNet;
+      totalIn  += dayIn;
+      totalOut += dayOut;
+      rows.push({ date, dayIn, dayOut, move, closeNet });
+      prevNet = closeNet;
+    });
+
+    const closingNet = prevNet;
+    const netMove = closingNet - openNet;
+
+    // update period summary
+    const fmtS = (id, val, forcePos) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = (val < 0 && !forcePos ? '−' : '') + fmt(Math.abs(val));
+      el.style.color = '';
+      if (id === 'nfNetMove') el.style.color = val >= 0 ? 'var(--green)' : 'var(--red)';
+      if (id === 'nfCloseNet') el.style.color = val >= 0 ? 'var(--green)' : 'var(--red)';
+      if (id === 'nfOpenNet') el.style.color = val >= 0 ? 'var(--green)' : 'var(--red)';
+    };
+    fmtS('nfOpenNet', openNet);
+    fmtS('nfTotalIn', totalIn);
+    fmtS('nfTotalOut', totalOut);
+    fmtS('nfNetMove', netMove);
+    fmtS('nfCloseNet', closingNet);
+
+    tbody.innerHTML = rows.map(r => {
+      const moveCls = r.move > 0 ? 'up' : r.move < 0 ? 'dn' : 'flat';
+      const netCls  = r.closeNet >= 0 ? 'pos' : 'neg';
+      const fmtV = v => (v < 0 ? '−' : '') + fmt(Math.abs(v));
+      const moveSign = r.move > 0 ? '+' : r.move < 0 ? '−' : '';
+      return `<tr>
+        <td class="nf-day-date">${r.date}</td>
+        <td class="nf-day-diff up">${r.dayIn > 0 ? '+' + fmt(r.dayIn) : '—'}</td>
+        <td class="nf-day-diff dn">${r.dayOut > 0 ? '−' + fmt(r.dayOut) : '—'}</td>
+        <td class="nf-day-diff ${moveCls}">${r.move === 0 ? '—' : moveSign + fmt(Math.abs(r.move))}</td>
+        <td class="nf-day-net ${netCls}">${fmtV(r.closeNet)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── VAULT ── */
+  let _vaultFileHandle = null;   // FileSystemFileHandle — persists until page reload or user changes it
+  let _vaultFileName = null;
+  let _vaultWriting = false;
+  let _vaultLastTs = null;
+
+  /* ── status pill in topbar ── */
+  function _vaultSetStatus(state, text) {
+    // state: 'idle' | 'writing' | 'ok' | 'err' | 'none'
+    const pill = document.getElementById('vaultStatusPill');
+    const dot  = document.getElementById('vaultStatusDot');
+    const lbl  = document.getElementById('vaultStatusLabel');
+    const colors = {
+      none:    ['#4a5a70','#1a2130','#253040'],
+      idle:    ['#3b82f6','#1e3a5f','#253040'],
+      writing: ['#f59e0b','#451a03','#5a3a00'],
+      ok:      ['#22c55e','#14532d','#1a4a2a'],
+      err:     ['#ef4444','#4c1d1d','#5a2020'],
+    };
+    const [dotC, bgC, borderC] = colors[state] || colors.none;
+    dot.style.background = dotC;
+    dot.style.boxShadow = state === 'writing' ? `0 0 6px ${dotC}` : `0 0 4px ${dotC}88`;
+    pill.style.background = bgC;
+    pill.style.borderColor = borderC;
+    lbl.textContent = text;
+  }
+
+  /* ── called from save() on every data change ── */
+  async function vaultAutoWrite() {
+    if (!_vaultFileHandle) return;
+    if (_vaultWriting) return; // debounce if somehow called twice fast
+    _vaultWriting = true;
+    _vaultSetStatus('writing', 'Saving…');
+    try {
+      const writable = await _vaultFileHandle.createWritable();
+      const payload = {
+        exportedAt: new Date().toLocaleString('en-IN'),
+        fileName: _vaultFileName,
+        database,
+        openingBalances
+      };
+      await writable.write(JSON.stringify(payload, null, 2));
+      await writable.close();
+      _vaultLastTs = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      _vaultSetStatus('ok', _vaultFileName + ' · ' + _vaultLastTs);
+    } catch(err) {
+      _vaultSetStatus('err', 'Write failed');
+      console.error('Vault write error:', err);
+    }
+    _vaultWriting = false;
+  }
+
+  /* ── pick a new backup file (create or overwrite) ── */
+  async function vaultPickFile() {
+    if (!window.showSaveFilePicker) {
+      document.getElementById('vaultFileStatus').textContent = '✗ File System Access API not supported in this browser. Use Chrome or Edge.';
+      document.getElementById('vaultFileStatus').className = 'vault-status err';
+      return;
+    }
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'fundflow_backup.json',
+        types: [{ description: 'JSON Backup', accept: { 'application/json': ['.json'] } }]
+      });
+      _vaultFileHandle = handle;
+      _vaultFileName = handle.name;
+      localStorage.setItem('fundFlow_vaultFileName', _vaultFileName);
+      document.getElementById('vaultFileStatus').textContent = '✓ Backup file set: ' + _vaultFileName + ' — all changes will auto-save here.';
+      document.getElementById('vaultFileStatus').className = 'vault-status ok';
+      document.getElementById('vaultCurrentFile').textContent = _vaultFileName;
+      _vaultSetStatus('idle', _vaultFileName + ' · ready');
+      // immediately write current state
+      await vaultAutoWrite();
+    } catch(e) {
+      if (e.name !== 'AbortError') {
+        document.getElementById('vaultFileStatus').textContent = '✗ Could not set file: ' + e.message;
+        document.getElementById('vaultFileStatus').className = 'vault-status err';
+      }
+    }
+  }
+
+  /* ── clear the active backup file ── */
+  function vaultClearFile() {
+    _vaultFileHandle = null;
+    _vaultFileName = null;
+    localStorage.removeItem('fundFlow_vaultFileName');
+    document.getElementById('vaultCurrentFile').textContent = 'None';
+    document.getElementById('vaultFileStatus').textContent = '';
+    document.getElementById('vaultFileStatus').className = 'vault-status';
+    _vaultSetStatus('none', 'No file');
+  }
+
+  /* ── import / restore from file ── */
+  function vaultImportFile(input) { if (input.files[0]) vaultImportFileObj(input.files[0]); }
+  function vaultImportFileObj(file) {
+    const st = document.getElementById('vaultImportStatus');
+    st.className = 'vault-status';
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const obj = JSON.parse(e.target.result);
+        if (!obj.database || !obj.openingBalances) throw new Error('Invalid backup format');
+        if (!confirm(`Restore backup from ${obj.exportedAt || 'unknown date'}?\nThis will overwrite current data.`)) return;
+        database = obj.database;
+        openingBalances = obj.openingBalances;
+        save(); updateUI();
+        st.textContent = '✓ Restored from ' + file.name;
+        st.className = 'vault-status ok';
+      } catch(err) {
+        st.textContent = '✗ Failed: ' + err.message;
+        st.className = 'vault-status err';
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ── manual one-off download ── */
+  function vaultExportNow() {
+    const payload = { exportedAt: new Date().toLocaleString('en-IN'), database, openingBalances };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+    a.href = url; a.download = `fundflow_backup_${ts}.json`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── snapshots (localStorage) ── */
+  const VAULT_SNAPS_KEY = 'fundFlow_vault_snapshots';
+  function getSnaps() { try { return JSON.parse(localStorage.getItem(VAULT_SNAPS_KEY)) || []; } catch { return []; } }
+  function saveSnaps(arr) { localStorage.setItem(VAULT_SNAPS_KEY, JSON.stringify(arr)); }
+
+  function vaultSaveSnapshot() {
+    const snaps = getSnaps();
+    const snap = {
+      id: Date.now(),
+      ts: new Date().toLocaleString('en-IN'),
+      size: JSON.stringify({ database, openingBalances }).length,
+      data: { database: JSON.parse(JSON.stringify(database)), openingBalances: { ...openingBalances } }
+    };
+    snaps.unshift(snap);
+    if (snaps.length > 20) snaps.length = 20;
+    saveSnaps(snaps);
+    renderSnapList();
+  }
+
+  function vaultRestoreSnap(id) {
+    const snap = getSnaps().find(s => s.id === id);
+    if (!snap) return;
+    if (!confirm(`Restore snapshot from ${snap.ts}?\nThis will overwrite current data.`)) return;
+    database = snap.data.database;
+    openingBalances = snap.data.openingBalances;
+    save(); updateUI(); closeVault();
+  }
+
+  function vaultDeleteSnap(id) { saveSnaps(getSnaps().filter(s => s.id !== id)); renderSnapList(); }
+
+  function vaultClearSnapshots() {
+    if (!confirm('Delete all saved snapshots?')) return;
+    localStorage.removeItem(VAULT_SNAPS_KEY);
+    renderSnapList();
+  }
+
+  function renderSnapList() {
+    const el = document.getElementById('vaultSnapList');
+    const snaps = getSnaps();
+    if (!snaps.length) { el.innerHTML = '<div class="vault-snap-empty">No snapshots yet</div>'; return; }
+    el.innerHTML = snaps.map(s => `
+      <div class="vault-snap-item">
+        <span style="font-size:13px;">📌</span>
+        <span class="snap-name">${s.ts}</span>
+        <span class="snap-size">${(s.size/1024).toFixed(1)} KB</span>
+        <button class="btn btn-ghost btn-sm" style="padding:3px 9px;font-size:11px;" onclick="vaultRestoreSnap(${s.id})">Restore</button>
+        <button class="del-btn" onclick="vaultDeleteSnap(${s.id})">✕</button>
+      </div>`).join('');
+  }
+
+  /* ── modal open/close ── */
+  function openVault() {
+    document.getElementById('vaultOverlay').classList.add('open');
+    renderSnapList();
+    // update current file label
+    const savedName = localStorage.getItem('fundFlow_vaultFileName');
+    document.getElementById('vaultCurrentFile').textContent = _vaultFileName || savedName || 'None';
+    // drag-drop on import zone
+    const dz = document.getElementById('vaultDropZone');
+    if (!dz._dd) {
+      dz._dd = true;
+      dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+      dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); const f = e.dataTransfer.files[0]; if (f) vaultImportFileObj(f); });
+    }
+  }
+  function closeVault() { document.getElementById('vaultOverlay').classList.remove('open'); }
+  function vaultOverlayClick(e) { if (e.target === document.getElementById('vaultOverlay')) closeVault(); }
+
+  function initVault() {
+    const savedName = localStorage.getItem('fundFlow_vaultFileName');
+    if (savedName) {
+      // handle was lost on reload — show name but flag re-pick needed
+      _vaultFileName = savedName;
+      document.getElementById('vaultCurrentFile').textContent = savedName;
+      _vaultSetStatus('idle', savedName + ' · reopen Vault to relink');
+    } else {
+      _vaultSetStatus('none', 'No file');
+    }
+  }
+
+  window.onload = () => {
+    document.getElementById('entryDate').valueAsDate = new Date();
+    populateCategories();
+    toggleEntryType();
+    load();
+    updateUI();
+    initVault();
+  };
+
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarBackdrop').classList.add('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('open');
+  }
+
+</script>
+
+</body>
+</html>
